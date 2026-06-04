@@ -9,7 +9,7 @@ module "cluster_automation" {
   edge_network_api_endpoint_override          = "https://staging-edgenetwork.sandbox.googleapis.com/"
   hardware_management_api_endpoint_override = "https://staging-gdchardwaremanagement.sandbox.googleapis.com/"
   connect_gateway_api_endpoint_override = "https://staging-connectgateway.sandbox.googleapis.com/"
-  source_of_truth_path         = "ggunjan-source-of-truth.csv"
+  source_of_truth_path         = "example-source-of-truth.csv"
   source_of_truth_branch       = "main"
   region                       = "us-central1"
   environment                  = "acp-stg"
