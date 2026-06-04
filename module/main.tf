@@ -215,7 +215,7 @@ resource "random_uuid" "watcher-src-uuid" {
 
 data "archive_file" "watcher-src" {
   type        = "zip"
-  output_path = "/tmp/watcher_src-${resource.random_uuid.watcher-src-uuid.result}.zip"
+  output_path = "/tmp/watcher_src-${random_uuid.watcher-src-uuid.result}.zip"
   source_dir  = "${path.module}/watchers/src/"
 }
 
