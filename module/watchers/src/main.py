@@ -109,27 +109,39 @@ def _zone_watcher_worker(
     for store_id in stores:
         store_info = stores[store_id]
 
-        zone_store_id = f'projects/{machine_project}/locations/{location}/zones/{store_id}'
-
+        hwm_zone_name = None
         try:
             if store_info.zone_name:
+                # Find HWM zone by globally_unique_id (GEC zone name)
+                for z_name, z_val in zones.items():
+                    if z_val.globally_unique_id == store_info.zone_name:
+                        hwm_zone_name = z_name
+                        break
+                if not hwm_zone_name:
+                    raise Exception(f"HWM Zone with globally_unique_id {store_info.zone_name} not found in HWM API")
                 zone = store_info.zone_name
                 zone_name_retrieved_from_api = False
             else:
-                zone = zones[zone_store_id].globally_unique_id
-                zone_name_retrieved_from_api = True
-        except Exception:
-            logger.error(f'Zone for store {store_id} cannot be found, skipping.')
+                # Fallback: assume HWM zone name is store_id
+                zone_store_id = f'projects/{machine_project}/locations/{location}/zones/{store_id}'
+                if zone_store_id in zones:
+                    hwm_zone_name = zone_store_id
+                    zone = zones[zone_store_id].globally_unique_id
+                    zone_name_retrieved_from_api = True
+                else:
+                    raise Exception(f"HWM Zone {zone_store_id} not found in HWM API")
+        except Exception as err:
+            logger.error(f'Zone for store {store_id} cannot be found, skipping. Error: {err}')
             continue
 
         try:                                       
             if not zone_name_retrieved_from_api:
                 logger.info(f'Zone name was provided directly in cluster intent for store: {store_id}. Skipping intent verification.')
-            elif zones[zone_store_id].cluster_intent_verified:
+            elif zones[hwm_zone_name].cluster_intent_verified:
                 logger.info(f'Cluster intent is present and verification has already been set for Store: {store_id}. Skipping..')
             else:
                 logger.info(f'Cluster intent is present but verification is not set on Store: {store_id}. Setting cluster intent verification.')
-                operation = set_zone_state_verify_cluster_intent(zone_store_id)
+                operation = set_zone_state_verify_cluster_intent(hwm_zone_name)
                 logger.info(f'HW API Operation: {operation.operation.name}')
         except Exception:
             logger.error(
@@ -170,8 +182,8 @@ def _zone_watcher_worker(
             if not builds.should_retry_zone_build(zone, store_info.intent_hash):
                 continue
 
-        zone_state = zones[zone_store_id].state
-        if zone_name_retrieved_from_api and not verify_zone_state(zone_state, zone_store_id, store_info.recreate_on_delete):
+        zone_state = zones[hwm_zone_name].state
+        if zone_name_retrieved_from_api and not verify_zone_state(zone_state, hwm_zone_name, store_info.recreate_on_delete):
             logger.info(f'Zone: {zone}, Store: {store_id} is not in expected state! skipping..')
             continue
 
