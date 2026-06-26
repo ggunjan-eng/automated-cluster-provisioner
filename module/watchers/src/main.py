@@ -424,9 +424,9 @@ def _cluster_watcher_worker(
             res_pager_n = en_client.list_subnets(req_n)
             subnet_list = [{'vlan_id': net.vlan_id, 'ipv4_cidr': sorted(net.ipv4_cidr)} for net in res_pager_n]
         except Exception as err:
-            logger.error(f"Error listing subnets for project: {project_id}, location: {location}, zone: {zone}")
-            logger.error(err)
-            continue
+            logger.warning(f"Warning: Unable to list subnets for project: {project_id}, location: {location}, zone: {zone}. Assuming empty subnet list and proceeding.")
+            logger.warning(err)
+            subnet_list = []
             
         subnet_list.sort(key=lambda x: x['vlan_id'])
         logger.debug(subnet_list)
