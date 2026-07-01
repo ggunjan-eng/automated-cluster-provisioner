@@ -696,7 +696,7 @@ steps:
     fi
 
     out=$(gcloud storage cp gs://$CLUSTER_INTENT_BUCKET/fleet-packages-rbac.yaml.template . 2>&1) || die "Failed to copy fleet packages RBAC template" "$out"
-    PROJECT_NUMBER_RESOLVED=$(gcloud projects describe $FLEET_PROJECT_ID --format="value(projectNumber)") || die "Failed to describe project" "Check build logs for gcloud stderr details"
+    PROJECT_NUMBER_RESOLVED=$(gcloud projects describe $FLEET_PROJECT_ID --format="value(projectNumber)" | grep -E '^[0-9]+$' | tail -n 1) || die "Failed to describe project" "Check build logs for gcloud stderr details"
     export PROJECT_NUMBER="$PROJECT_NUMBER_RESOLVED"
     
     out=$(envsubst < fleet-packages-rbac.yaml.template > fleet-packages-rbac.yaml 2>&1) || die "Failed to substitute environment variables in template" "$out"
@@ -724,7 +724,7 @@ steps:
     # Apply old Group RBAC steps if cluster version is less than 1.10.0
     if [[ "${SKIP_IDENTITY_SERVICE}" == "FALSE" ]] &&  ! gdc_version_evaluate "${CLUSTER_VERSION}" "1.10.0"; then
       log_build_step "Configuring manual Group RBAC"
-      FLEET_PROJECT_NUMBER=$(gcloud projects describe $FLEET_PROJECT_ID --format='value(projectNumber)') || die "Failed to describe project for Group RBAC" "Check build logs for gcloud stderr details"
+      FLEET_PROJECT_NUMBER=$(gcloud projects describe $FLEET_PROJECT_ID --format='value(projectNumber)' | grep -E '^[0-9]+$' | tail -n 1) || die "Failed to describe project for Group RBAC" "Check build logs for gcloud stderr details"
       out=$(kubectl patch clientconfig default -n kube-public --type=merge -p '{"spec":{"authentication":[{"google":{"audiences":["//'${GKEHUB_API_ENDPOINT}'/projects/'${FLEET_PROJECT_NUMBER}'/locations/global/memberships/'${CLUSTER_NAME}'"]},"name":"google-authentication-method"}]}}' 2>&1) || {
         diag=$(
           kubectl get clientconfig default -n kube-public -o json 2>/dev/null | jq '
