@@ -89,7 +89,12 @@ steps:
       [[ -n "${UNDER_FACTORY_CHECKS}" ]] && { return; } # UNDER_FACTORY_CHECKS already set
       [[ -z "${zone_store_path}" ]] && { export UNDER_FACTORY_CHECKS=FALSE; echo ">>> [Zone Status] zone signaling disabled"; return ; }
 
-      ZONE_URI="${HARDWARE_MANAGEMENT_API_ENDPOINT}/${HARDWARE_MANAGEMENT_API_VERSION}/${zone_store_path}"
+      if [[ "${zone_store_path}" != projects/* ]]; then
+        zone_store_path="projects/${MACHINE_PROJECT_ID}/locations/${LOCATION}/zones/${zone_store_path}"
+      fi
+
+      local hwm_endpoint="${HARDWARE_MANAGEMENT_API_ENDPOINT%/}"
+      ZONE_URI="${hwm_endpoint}/${HARDWARE_MANAGEMENT_API_VERSION}/${zone_store_path}"
 
       # Temporarily disable tracing to protect the access token from leaking in logs
       set +x
@@ -150,7 +155,12 @@ steps:
         log_tail=""
       fi
 
-      SIGNAL_URI="${HARDWARE_MANAGEMENT_API_ENDPOINT}/${HARDWARE_MANAGEMENT_API_VERSION}/${zone_store_path}:signal"
+      if [[ "${zone_store_path}" != projects/* ]]; then
+        zone_store_path="projects/${MACHINE_PROJECT_ID}/locations/${LOCATION}/zones/${zone_store_path}"
+      fi
+
+      local hwm_endpoint="${HARDWARE_MANAGEMENT_API_ENDPOINT%/}"
+      SIGNAL_URI="${hwm_endpoint}/${HARDWARE_MANAGEMENT_API_VERSION}/${zone_store_path}:signal"
 
       # Unified, elegant single jq call to build different payloads conditionally.
       # This is robust against null/empty/special characters and guarantees valid JSON.
@@ -277,7 +287,7 @@ steps:
       echo ">>> [Zone Signal] Successfully signaled ${state_signal}."
 
       operation_id=$(echo $out | jq -r .name)
-      URI="${HARDWARE_MANAGEMENT_API_ENDPOINT}/${HARDWARE_MANAGEMENT_API_VERSION}/${operation_id}"
+      URI="${hwm_endpoint}/${HARDWARE_MANAGEMENT_API_VERSION}/${operation_id}"
       echo ">>> [Zone Signal] Operation ID: ${operation_id}"
       echo ">>> [Zone Signal] Waiting for operation to complete..."
       
