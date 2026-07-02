@@ -487,11 +487,7 @@ steps:
     export ZONE_NAME_FROM_SOT=$(parse_csv_optional "$CLUSTER_INTENT" "zone_name")
     export LABELS=$(parse_csv_optional "$CLUSTER_INTENT" "labels")
     set -x
-    if [[ -n "${ZONE_NAME_FROM_SOT}" ]]; then
-      set_factory_check_flag "${ZONE_NAME_FROM_SOT}"
-    else
-      set_factory_check_flag "$ZONE_ID"
-    fi
+    set_factory_check_flag "$ZONE_ID"
     set +x
 
     if [ -n "${EDGE_CONTAINER_API_ENDPOINT_OVERRIDE:-}" ]; then
