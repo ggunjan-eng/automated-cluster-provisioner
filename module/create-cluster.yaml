@@ -634,13 +634,17 @@ steps:
     export KUBECONFIG="$(pwd)/gateway-kubeconfig"
     cred_attempts=0
     max_cred_retries=5
+    set +eE
     while [[ ${cred_attempts} -lt ${max_cred_retries} ]]; do
-      out=$(gcloud container fleet memberships get-credentials $CLUSTER_NAME --project $FLEET_PROJECT_ID 2>&1)
-      [[ $? -eq 0 ]] && break
+      out=$(gcloud container fleet memberships get-credentials $CLUSTER_NAME --project $FLEET_PROJECT_ID 2>&1) || true
+      if [[ $? -eq 0 && ! "$out" =~ "ERROR:" ]]; then
+        break
+      fi
       echo ">>> [Cluster Create] [WARNING] get-credentials attempt $((cred_attempts+1)) failed: $out. Retrying in 10s..."
       sleep 10
       ((cred_attempts++))
     done
+    set -eE
     if [[ ${cred_attempts} -ge ${max_cred_retries} ]]; then
       die "Failed to get cluster credentials after ${max_cred_retries} attempts" "$out" 7
     fi
