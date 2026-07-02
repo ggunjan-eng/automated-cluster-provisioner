@@ -299,7 +299,9 @@ steps:
         
         echo ">>> [Zone Signal] Poll attempt $((signal_attempts+1))/${max_retries_for_signal_completion} - done: ${is_completed}"
         
-        [[ "${is_completed}" != "false" ]] && break
+        if [[ "${is_completed}" != "false" ]]; then
+          break
+        fi
         sleep 5
         ((signal_attempts++))
       done
