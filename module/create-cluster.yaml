@@ -694,6 +694,7 @@ steps:
     }
 
     set -x
+    gcloud beta container fleet features enable configmanagement --project $FLEET_PROJECT_ID 2>/dev/null || true
     out=$(gcloud beta container fleet config-management apply --membership=$CLUSTER_NAME \
         --config=./apply-spec.yaml --project $FLEET_PROJECT_ID 2>&1)
     rc=$?
