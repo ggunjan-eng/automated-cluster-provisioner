@@ -55,3 +55,17 @@ roleRef:
   kind: ClusterRole
   name: fleetpackages-configsync-admin
   apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: acp-prov-agent-admin-binding
+subjects:
+- kind: User
+  name: gdce-prov-agent-acp-stg@cloud-alchemists-sandbox.iam.gserviceaccount.com
+- kind: User
+  name: gdce-prov-agent-acp-dev@cloud-alchemists-sandbox.iam.gserviceaccount.com
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
