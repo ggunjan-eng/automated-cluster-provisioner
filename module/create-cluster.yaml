@@ -870,7 +870,7 @@ steps:
         die "Health check resource not created after 20min" "Timeout waiting for resource creation" 4 "$diag"
       fi
 
-      PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS="${PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS:-3600}"
+      PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS="${PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS:-7200}"
       log_build_step "Waiting for platform healthchecks to pass (Timeout: ${PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS}s)"
       if ! kubectl wait healthchecks.validator.gdc.gke.io/default --for condition=PlatformHealthy --timeout="${PLATFORM_HEALTHCHECK_TIMEOUT_SECONDS}s"; then
         diag=$(
