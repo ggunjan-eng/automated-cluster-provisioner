@@ -906,7 +906,7 @@ steps:
     set -eE
     trap 'die "Error shutting down VMs" "Command that failed: $BASH_COMMAND"' ERR
 
-    export VIRTCTL_VERSION=v1.2.2
+    export VIRTCTL_VERSION=v1.3.1
     curl -L https://github.com/kubevirt/kubevirt/releases/download/${VIRTCTL_VERSION}/virtctl-${VIRTCTL_VERSION}-linux-amd64 -o virtctl
     chmod +x virtctl
 
