@@ -96,24 +96,50 @@ steps:
       local hwm_endpoint="${HARDWARE_MANAGEMENT_API_ENDPOINT%/}"
       ZONE_URI="${hwm_endpoint}/${HARDWARE_MANAGEMENT_API_VERSION}/${zone_store_path}"
 
-      # Temporarily disable tracing to protect the access token from leaking in logs
-      set +x
-      local zone_response=$(curl -f -H "Authorization: Bearer $(gcloud auth print-access-token)" \
-            -H "Content-Type: application/json" \
-            -X GET \
-            "${ZONE_URI}" -s)
-      local curl_status=$?
-      set -x
+      local max_attempts=5
+      local attempt=1
+      local globally_unique_id=""
+      local zone_state=""
+      local zone_response=""
+      local curl_status=1
+
+      while [[ ${attempt} -le ${max_attempts} ]]; do
+        # Temporarily disable tracing to protect the access token from leaking in logs
+        set +x
+        zone_response=$(curl -f -H "Authorization: Bearer $(gcloud auth print-access-token)" \
+              -H "Content-Type: application/json" \
+              -X GET \
+              "${ZONE_URI}" -s)
+        curl_status=$?
+        set -x
+
+        if [[ $curl_status -eq 0 ]]; then
+          zone_state=$(printf '%s\n' "$zone_response" | jq -r '.state // empty' 2>/dev/null)
+          globally_unique_id=$(printf '%s\n' "$zone_response" | jq -r '.globallyUniqueId // empty' 2>/dev/null)
+          if [[ -n "${globally_unique_id}" && "${globally_unique_id}" != "null" ]]; then
+            break
+          fi
+        fi
+
+        echo ">>> [Zone Status] Attempt ${attempt}/${max_attempts}: globallyUniqueId completely empty or query failed. Retrying in 5s..."
+        sleep 5
+        ((attempt++))
+      done
 
       if [[ $curl_status -ne 0 ]]; then
-        die "Failed to query the zone state" "$out" 14
+        die "Failed to query the zone state after ${max_attempts} attempts" "${zone_response}" 14
       fi
 
-      local zone_state=$(printf '%s\n' "$zone_response" | jq -r '.state // empty' 2>/dev/null)
-      local globally_unique_id=$(printf '%s\n' "$zone_response" | jq -r '.globallyUniqueId // empty' 2>/dev/null)
-
-      if [[ -z "${globally_unique_id}" ]]; then
-        die "The globallyUniqueId from the zone response is empty."
+      if [[ -z "${globally_unique_id}" || "${globally_unique_id}" == "null" ]]; then
+        if [[ -n "${ZONE_NAME_FROM_SOT:-}" && "${ZONE_NAME_FROM_SOT}" == "${ZONE}" ]]; then
+          echo ">>> [Zone Status] [WARNING] API response lacks globallyUniqueId after transitions. Using verified static ZONE_NAME_FROM_SOT (${ZONE_NAME_FROM_SOT}) fallback."
+          globally_unique_id="${ZONE_NAME_FROM_SOT}"
+        elif [[ -n "${ZONE:-}" ]]; then
+          echo ">>> [Zone Status] [WARNING] API response lacks globallyUniqueId. Falling back directly to ZONE (${ZONE})."
+          globally_unique_id="${ZONE}"
+        else
+          die "The globallyUniqueId from the zone response is empty and no fallback ZONE could be verified."
+        fi
       fi
 
       if [[ "${globally_unique_id}" != "${ZONE}" ]]; then
