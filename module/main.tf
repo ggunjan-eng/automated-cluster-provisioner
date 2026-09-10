@@ -233,6 +233,7 @@ resource "google_service_account" "zone-watcher-agent" {
 resource "google_project_iam_member" "zone-watcher-agent-run-roles" {
   for_each = toset([
     "roles/cloudbuild.builds.editor",
+    "roles/monitoring.metricWriter",
   ])
 
   project = var.project_id
